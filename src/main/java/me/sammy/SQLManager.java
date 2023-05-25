@@ -35,8 +35,7 @@ public class SQLManager {
 
 
     public static String getCharacterByGuild(String guild) {
-        System.out.println(guild);
-        String character = null;
+        String character = "RuPaul";
         try {
             Statement statement = Bot.connection.createStatement();
 

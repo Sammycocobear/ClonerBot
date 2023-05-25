@@ -1,7 +1,7 @@
 package me.sammy;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class KeyGetter {
@@ -11,12 +11,11 @@ public class KeyGetter {
     static {
         try {
             Properties properties = new Properties();
-            FileInputStream configFile = new FileInputStream("src/main/java/config.properties");
-            System.out.println(configFile);
-            properties.load(configFile);
+            InputStream inputStream = KeyGetter.class.getClassLoader().getResourceAsStream("config.properties");
+            properties.load(inputStream);
             discordToken = properties.getProperty("discord_token");
             openaiKey = properties.getProperty("openai_key");
-            configFile.close();
+            inputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -29,6 +28,4 @@ public class KeyGetter {
     public static String getOpenaiKey() {
         return openaiKey;
     }
-
 }
-

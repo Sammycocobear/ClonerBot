@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 import java.nio.file.Paths;
@@ -26,6 +27,7 @@ public class Bot {
         .addEventListeners(new SlashEvent(), new BotLoadInformation())
         .disableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
         .setBulkDeleteSplittingEnabled(false)
+        .enableIntents(GatewayIntent.GUILD_MEMBERS) // Enable the GUILD_MEMBERS intent
         .setActivity(Activity.watching("Cloning your favorite people!"))
         .build();
 
