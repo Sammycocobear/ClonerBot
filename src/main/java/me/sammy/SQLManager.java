@@ -53,7 +53,7 @@ public class SQLManager {
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
-        return character;
+        return character.replace("\n","");
     }
 
 
