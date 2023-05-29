@@ -1,12 +1,9 @@
 package me.sammy.Events;
 
-import com.theokanning.openai.completion.CompletionRequest;
-import com.theokanning.openai.completion.CompletionResult;
-import com.theokanning.openai.service.OpenAiService;
-import me.sammy.Bot;
 import me.sammy.ChatHandlers.Chat;
 import me.sammy.ChatHandlers.Conversation;
 import me.sammy.ChatHandlers.ConversationManager;
+import me.sammy.GBTAPIHandler;
 import me.sammy.SQLManager;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
@@ -14,16 +11,20 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 
 public class SlashEvent extends ListenerAdapter {
 
-    OpenAiService service = new OpenAiService(Bot.OPENAI_KEY);
+    boolean testMode = false;
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
+        if (testMode){
+            if (!event.getGuild().getId().equals("1112270118706225192")){
+                event.reply("This bot is in test mode, wait for sammy to fix some shi up").queue();
+                return;
+            }
+        }
+
         Guild guild = event.getGuild();
         User user = event.getUser();
 
@@ -32,65 +33,77 @@ public class SlashEvent extends ListenerAdapter {
                 event.reply("You must say something to talk to RuPaul").queue();
                 return;
             }
+            event.deferReply().queue();
 
             String prompt = event.getOption("message").getAsString();
 
-            Conversation conversation = ConversationManager.getConversation(guild,user);
-            String message = null;
-            if (conversation != null){ //there is a conversation for this user in this guild loaded
-                message = conversation.getFormmatedConversation(guild);
-            }
 
+
+            /*
+            OpenAiService service = new OpenAiService(Bot.OPENAI_KEY);
 
 
             String containsPastMessage = "There is already a conversation going on between you and this user. " +
                     "Try to use the conversation that has already been going on to make the best response to the the prompt given to you by the user." +
                     "However DO NOT INCLUDE ANY PART OF THE PREVIOUS CONVERSATION IN YOUR REPLY. " +
-                    "THE CONVERSATION IS STORED IN DATA AND YOU DO NOT NEED TO REPEAT IT PUT THE RESPONSE!!!" +
+                    "THE CONVERSATION IS STORED, YOU DO NOT NEED TO REPEAT IT PUT THE RESPONSE" +
                     "OR TALK IN CONVERSATION FORMAT. " +
                     "Here is the conversation\n" + message;
             event.deferReply().queue();
-            
-            CompletionRequest completionRequest = CompletionRequest.builder()
-                    .prompt(String.format("As an expert in imitating human conversations, " +
-                                    "please respond as %s, the character/personality you are going to clone, " +
-                                    "to the following input:%s. %s",
-                            SQLManager.getCharacter(event.getGuild()),
-                            prompt,
-                            message != null ? containsPastMessage : ""))
-                    .model("text-davinci-003")
-                    .maxTokens(200)
-                    .temperature(.8)
-                    .stop(Arrays.asList("SAUHNASDFUIJBDNIHASJFBIHDASJKBFGIHSDGBVSHDfv"))
-                    .frequencyPenalty(2.0)
-                    .presencePenalty(2.0)
-                    .build();
 
 
-            System.out.println(String.format("As an expert in imitating human conversations, " +
+            String completionPrompt = String.format("As an expert in imitating human conversations, " +
                             "please respond as %s, the character/personality you are going to clone, " +
                             "to the following input:%s. %s",
                     SQLManager.getCharacter(event.getGuild()),
                     prompt,
-                    message != null ? containsPastMessage : ""));
+                    message != null ? containsPastMessage : "") + "\n\n";
+
+            CompletionRequest completionRequest = CompletionRequest.builder()
+                    .prompt(completionPrompt)
+                    .model("gbt-3.5-turbo-0301")
+                    .temperature(.8)
+                    .maxTokens(300)
+                    .frequencyPenalty(2.0)
+                    .presencePenalty(2.0)
+                    .stop(Arrays.asList("ZZZZZZZZZZZZZZZZZZZZZZZZZZ"))
+                    .build();
+
+
 
             CompletionResult completionResult = service.createCompletion(completionRequest);
-            System.out.println(completionResult);
+            event.getChannel().sendMessage(completionPrompt).queue();
+            event.getChannel().sendMessage(completionRequest.toString()).queue();
             String response = completionResult.getChoices().get(0).getText();
-            System.out.println(response);
             response = extractSubstring(response);
-            System.out.println(response);
-            if (response.isEmpty()){
-                event.getHook().editOriginal("There has been an unkown error, try repeating it again").queue();
+
+             */
+
+            Conversation conversation = ConversationManager.getConversation(guild,user);
+
+            Chat currentChat = new Chat(user,guild,prompt);
+            String response = null;
+
+
+            if (conversation == null){
+                conversation = new Conversation(guild, user,currentChat);
+            }else{
+                conversation.addChat(currentChat);
+            }
+
+            try {
+                response = GBTAPIHandler.chat(conversation,currentChat);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if (response == null){
+                event.getHook().editOriginal("There has been an unknown error, try repeating it again").queue();
                 return;
             }
 
-            if (message == null){
-                Chat chat = new Chat(user,guild,prompt,response);
-                ConversationManager.addConversation(guild,new Conversation(user,chat));
-            }else{
-                conversation.addChat(new Chat(user,guild,prompt,response));
-            }
+            currentChat.setResponse(response);
+
             event.getHook().editOriginal(response).queue();
 
         } else if (event.getName().equals("clone")) {
@@ -124,6 +137,7 @@ public class SlashEvent extends ListenerAdapter {
             return input;
         }
     }
+
 
 
 
