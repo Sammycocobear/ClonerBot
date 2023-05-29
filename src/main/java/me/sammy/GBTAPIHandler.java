@@ -37,8 +37,10 @@ public class GBTAPIHandler {
 
         var client = HttpClient.newHttpClient();
         var response = client.send(thing, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 429){
+            return "RATELIMITEDSAMMYLOOK";
+        }
         if (response.statusCode() != 200){
-            System.out.println(response.body());
             return null;
         }
         JSONObject jsonObject = new JSONObject(response.body());

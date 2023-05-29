@@ -100,6 +100,9 @@ public class SlashEvent extends ListenerAdapter {
             if (response == null){
                 event.getHook().editOriginal("There has been an unknown error, try repeating it again").queue();
                 return;
+            }else if (response.equals("RATELIMITEDSAMMYLOOK")){
+                event.getHook().editOriginal("The bot is being used too fast, give it a break for a second.").queue();
+                return;
             }
 
             currentChat.setResponse(response);
